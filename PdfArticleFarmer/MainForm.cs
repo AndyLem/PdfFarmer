@@ -28,7 +28,7 @@ namespace PdfArticleFarmer
         {
             InitializeComponent();
         }
-
+         
         private void MainForm_Load(object sender, EventArgs e)
         {
             _labels = new Label[] { line1Box, line2Box, line3Box, line4Box, line5Box };
