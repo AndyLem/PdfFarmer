@@ -74,7 +74,6 @@
             this.rawBox.Size = new System.Drawing.Size(858, 146);
             this.rawBox.TabIndex = 0;
             this.rawBox.WordWrap = false;
-            this.rawBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.rawBox_MouseDown);
             // 
             // dropPanel
             // 
@@ -415,6 +414,7 @@
             this.Controls.Add(this.dropPanel);
             this.Controls.Add(this.panel3);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.MaximizeBox = false;
             this.MaximumSize = new System.Drawing.Size(874, 1000);
             this.MinimumSize = new System.Drawing.Size(874, 500);
             this.Name = "MainForm";

@@ -37,6 +37,8 @@ namespace PdfArticleFarmer
             ClearFields();
         }
 
+        #region drag'n'drop from left to right
+
         private void titleBox_DragDrop(object sender, DragEventArgs e)
         {
             TextBox box = (TextBox) sender;
@@ -64,6 +66,10 @@ namespace PdfArticleFarmer
                 e.Effect = DragDropEffects.None;
         }
 
+        #endregion
+
+        #region drag'n'drop files
+
         private void MainForm_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -77,6 +83,11 @@ namespace PdfArticleFarmer
             e.Effect = DragDropEffects.None;
         }
 
+        private void MainForm_DragLeave(object sender, EventArgs e)
+        {
+            dropPanel.Visible = false;
+        }
+
         private void dropPanel_DragDrop(object sender, DragEventArgs e)
         {
             dropPanel.Visible = false;
@@ -87,6 +98,23 @@ namespace PdfArticleFarmer
             }
         }
 
+        private void dropPanel_DragEnter(object sender, DragEventArgs e)
+        {
+            dropPanel.Visible = true;
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+            else
+                dropPanel.Visible = false;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Processing the list of files
+        /// </summary>
+        /// <param name="fileList">List of files to be processed. Not pdf's will be ignored</param>
         private void ProcessFiles(string[] fileList)
         {
             _files.Clear();
@@ -106,6 +134,9 @@ namespace PdfArticleFarmer
             }
         }
 
+        /// <summary>
+        /// clearing all fields
+        /// </summary> 
         private void ClearFields()
         {
             rawBox.Text = titleBox.Text = authorsBox.Text = journalBox.Text = infoBox.Text = "";
@@ -114,6 +145,9 @@ namespace PdfArticleFarmer
             fileNameBox.Text = "- no file -";
         }
 
+        /// <summary>
+        /// filling fields with the info from current file
+        /// </summary> 
         private void FillFields()
         {
             ClearFields();
@@ -139,6 +173,11 @@ namespace PdfArticleFarmer
             //FillLines();
         }
 
+        /// <summary>
+        /// end of the pdf parsing event handler
+        /// </summary>
+        /// <param name="sender">ParallelOpener</param>
+        /// <param name="e">Empty</param> 
         void fileOpener_Completed(object sender, EventArgs e)
         {
             if (_fileOpener.Success)
@@ -154,6 +193,10 @@ namespace PdfArticleFarmer
             }
         }
         
+        /// <summary>
+        /// Returns the name of the current file. Empty string if no file is current
+        /// </summary>
+        /// <returns></returns>
         private string GetCurFileName()
         {
             if ((_curFileIndex >= 0) && (_curFileIndex < _files.Count))
@@ -161,6 +204,9 @@ namespace PdfArticleFarmer
             return "";
         }
 
+        /// <summary>
+        /// Fills left part of the form taking into account current line index
+        /// </summary>
         private void FillLines()
         {
             
@@ -172,27 +218,19 @@ namespace PdfArticleFarmer
             nextLinesBtn.Enabled = _lineIndex + _labels.Length < rawBox.Lines.Length;
         }
 
+        /// <summary>
+        /// Fills one line
+        /// </summary>
+        /// <param name="label">Label of the line</param>
+        /// <param name="startLineIndex">Index of the top line</param>
+        /// <param name="lineShift">Shift of the current line from the top</param>
         private void FillLine(Label label, int startLineIndex, int lineShift)
         {
             if (startLineIndex + lineShift < rawBox.Lines.Length)
                 label.Text = rawBox.Lines[startLineIndex + lineShift];
         }
 
-        private void dropPanel_DragEnter(object sender, DragEventArgs e)
-        {
-            dropPanel.Visible = true;
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                e.Effect = DragDropEffects.Copy;
-            }
-            else
-            dropPanel.Visible = false;
-        }
-
-        private void MainForm_DragLeave(object sender, EventArgs e)
-        {
-            dropPanel.Visible = false;
-        }
+        #region buttons click events
 
         private void prevLinesBtn_Click(object sender, EventArgs e)
         {
@@ -217,6 +255,62 @@ namespace PdfArticleFarmer
         {
             Proceed(true);
         }
+
+        private void skipBtn_Click(object sender, EventArgs e)
+        {
+            NextFile();
+        }
+
+        private void selectDBBtn_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.FileName = _dbFileName;
+            dlg.DefaultExt = ".txt";
+            dlg.CheckPathExists = true;
+            dlg.Multiselect = false;
+            dlg.Title = "Database file";
+            string defPath = Path.GetDirectoryName(_dbFileName);
+            if (defPath == "")
+                defPath = Path.GetDirectoryName(Application.ExecutablePath);
+            dlg.InitialDirectory = defPath;
+            if (dlg.ShowDialog() != DialogResult.OK) return;
+            _dbFileName = dlg.FileName;
+            SetWindowTitle();
+        }
+
+        private void scanFolderBtn_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog dlg = new FolderBrowserDialog();
+            dlg.SelectedPath = Path.GetDirectoryName(Application.ExecutablePath);
+            dlg.ShowNewFolderButton = false;
+            if (dlg.ShowDialog() != DialogResult.OK) return;
+            string path = dlg.SelectedPath;
+            string[] files = Directory.GetFiles(path, "*.pdf");
+            ProcessFiles(files);
+        }
+
+        private void scanFilesBtn_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.DefaultExt = ".pdf";
+            dlg.CheckPathExists = true;
+            dlg.CheckFileExists = true;
+            dlg.Multiselect = true; ;
+            dlg.Title = "Pdf to scan";
+            dlg.Filter = "PDF|*.pdf";
+            if (dlg.ShowDialog() != DialogResult.OK) return;
+            string[] files = dlg.FileNames;
+            ProcessFiles(files);
+        }
+
+        private void dontRenameBtn_Click(object sender, EventArgs e)
+        {
+            Proceed(false);
+        }
+        
+        #endregion
+
+        #region file processing
 
         private void Proceed(bool rename)
         {
@@ -259,68 +353,17 @@ namespace PdfArticleFarmer
             dbWriter.Close();
         }
 
-        private void rawBox_MouseDown(object sender, MouseEventArgs e)
-        {
-            if (rawBox.SelectionLength > 0)
-                rawBox.DoDragDrop(rawBox.SelectedText, DragDropEffects.All);
-        }
-
-        private void dontRenameBtn_Click(object sender, EventArgs e)
-        {
-            Proceed(false);
-        }
-
-        private void skipBtn_Click(object sender, EventArgs e)
-        {
-            NextFile();
-        }
-
-        private void selectDBBtn_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog dlg = new OpenFileDialog();
-            dlg.FileName = _dbFileName;
-            dlg.DefaultExt = ".txt";
-            dlg.CheckPathExists = true;
-            dlg.Multiselect = false;
-            dlg.Title = "Database file";
-            string defPath = Path.GetDirectoryName(_dbFileName);
-            if (defPath == "")
-                defPath = Path.GetDirectoryName(Application.ExecutablePath);
-            dlg.InitialDirectory = defPath;
-            if (dlg.ShowDialog() != DialogResult.OK) return;
-            _dbFileName = dlg.FileName;
-            SetWindowTitle();
-        }
-
+        #endregion
+        
+        /// <summary>
+        /// Sets main form's title to display current db file name
+        /// </summary>
         private void SetWindowTitle()
         {
             Text = Path.GetFileName(_dbFileName) + " - " + Application.ProductName;
         }
 
-        private void scanFolderBtn_Click(object sender, EventArgs e)
-        {
-            FolderBrowserDialog dlg = new FolderBrowserDialog();
-            dlg.SelectedPath = Path.GetDirectoryName(Application.ExecutablePath);
-            dlg.ShowNewFolderButton = false;
-            if (dlg.ShowDialog() != DialogResult.OK) return;
-            string path = dlg.SelectedPath;
-            string[] files = Directory.GetFiles(path, "*.pdf");
-            ProcessFiles(files);
-        }
-
-        private void scanFilesBtn_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog dlg = new OpenFileDialog();
-            dlg.DefaultExt = ".pdf";
-            dlg.CheckPathExists = true;
-            dlg.CheckFileExists = true;
-            dlg.Multiselect = true; ;
-            dlg.Title = "Pdf to scan";
-            dlg.Filter = "PDF|*.pdf";
-            if (dlg.ShowDialog() != DialogResult.OK) return;
-            string[] files = dlg.FileNames;
-            ProcessFiles(files);
-        }
+        #region fileName label click events
 
         private void fileNameBox_MouseEnter(object sender, EventArgs e)
         {
@@ -338,5 +381,7 @@ namespace PdfArticleFarmer
             if (file == "") return;
             Process.Start(file);
         }
+
+        #endregion
     }
 }

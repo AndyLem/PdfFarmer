@@ -11,6 +11,12 @@ namespace PdfArticleFarmer
     public class ParallelFileOpener
     {
         protected string _fileName;
+        protected bool _success;
+        protected string _result;
+        protected BackgroundWorker worker;
+        public event EventHandler Completed;
+        protected ProgressBarForm form;
+
         public bool Ready
         {
             get
@@ -18,12 +24,22 @@ namespace PdfArticleFarmer
                 return !worker.IsBusy;
             }
         }
-        public string Result;
-        public bool Success;
-        BackgroundWorker worker;
-        public event EventHandler Completed;
-        protected ProgressBarForm form;
-        protected delegate void EmptyMethod();
+
+        public string Result
+        {
+            get 
+            { 
+                return _result; 
+            }
+        }
+
+        public bool Success
+        {
+            get 
+            { 
+                return _success; 
+            }
+        }
 
         public string FileName
         {
@@ -32,6 +48,8 @@ namespace PdfArticleFarmer
                 return _fileName;
             }
         }
+
+        private delegate void EmptyMethod();
 
         public ParallelFileOpener()
         {
@@ -51,7 +69,7 @@ namespace PdfArticleFarmer
             form.ShowDialog();
         }
 
-        void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             if (Completed != null)
                 Completed(this, EventArgs.Empty);
@@ -59,7 +77,7 @@ namespace PdfArticleFarmer
                 form.Close(); // нереальная ситуация. мы никогда не должны тут оказаться
         }
 
-        void worker_DoWork(object sender, DoWorkEventArgs e)
+        private void worker_DoWork(object sender, DoWorkEventArgs e)
         {
             try
             {
@@ -70,12 +88,12 @@ namespace PdfArticleFarmer
                     form.Invoke(step);
                 }
                 PDFTextStripper stripper = new PDFTextStripper();
-                Result = stripper.getText(doc);
-                Success = true;
+                _result = stripper.getText(doc);
+                _success = true;
             }
             catch
             {
-                Success = false;
+                _success = false;
             }
             finally
             {
